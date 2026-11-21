@@ -64,7 +64,7 @@ def fetch_audio(source: str, work_dir: Path) -> Path:
         return local_candidate
 
     if "drive.google.com" in source or "docs.google.com" in source:
-        out = gdown.download(url=source, output=str(work_dir) + "/", quiet=False, fuzzy=True)
+        out = gdown.download(url=source, output=str(work_dir) + "/", quiet=False)
         if not out or not Path(out).exists():
             raise RuntimeError(f"gdown failed to fetch Google Drive file: {source}")
         return Path(out)
