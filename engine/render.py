@@ -1,5 +1,4 @@
-"""Axis 7: Lossless Genome JSON, Compressed Timeseries, LLM Dossier & SQLite+FTS5 Catalog."""
-import datetime
+"""Axis 7: Lossless Genome JSON, Compressed Timeseries, LLM Dossier & Auto-Migrating SQLite+FTS5."""
 import gzip
 import json
 import math
@@ -22,28 +21,26 @@ def sanitize(obj):
         return None if (math.isnan(v) or math.isinf(v)) else v
     if isinstance(obj, (np.integer, int)):
         return int(obj)
+    if isinstance(obj, (np.bool_, bool)):
+        return bool(obj)
     return obj
 
 
 def build_acoustic_vector(genome: dict) -> list:
-    """Compact 64-D acoustic vector for future cosine-similarity associative search."""
+    """Compact 64-D normalized acoustic vector for future cosine-similarity scrubbing."""
     p = genome["pitch_harmony"]
     r = genome["rhythm_forensics"]
     t = genome["timbre_physics"]
     s = genome["space_dynamics"]
 
     vec = []
-    # 6 perceptual bands + 6 raw bands (12)
     for k in ["sub", "bass", "chest", "presence", "edge", "air"]:
         vec.append(t["somatic_6band"]["perceptual_a_weighted_pct"][k] / 100.0)
     for k in ["sub", "bass", "chest", "presence", "edge", "air"]:
         vec.append(t["somatic_6band"]["physical_raw_power_pct"][k] / 100.0)
-    # 12 polyphonic chroma (24)
     for pc in ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]:
         vec.append(p["polyphonic_chroma_gravity"][pc] / 100.0)
-    # 20 MFCC means normalized by 100 (44)
     vec.extend([x / 100.0 for x in t["mfcc_mean"][:20]])
-    # 20 global physics/rhythm/pitch/space scalars (64)
     vec.extend([
         r["primary_bpm"] / 200.0,
         r["drums_layer"]["nps"] / 10.0,
@@ -51,14 +48,14 @@ def build_acoustic_vector(genome: dict) -> list:
         r["drums_layer"]["ioi_entropy"],
         r["drums_layer"]["hartzig_residual_ms"] / 100.0,
         r["drums_layer"]["pink_noise_beta"] / 2.0,
-        r["drums_layer"]["ghost_swell_pct"] / 100.0,
+        r["drone_sustain_index"],
         p["lead_contour"]["drift_gt15c_pct"] / 100.0,
         p["lead_contour"]["vibrato_pct"] / 100.0,
         min(1.0, p["lead_contour"]["bend_count"] / 100.0),
         p["sensory_roughness_mean"] * 5.0,
         p["harmonic_change_rate_hz"],
         t["centroid_hz"]["mean"] / 8000.0,
-        t["spectral_flatness"]["mean"] * 10.0,
+        (t["spectral_flatness_db"]["mean"] + 60.0) / 60.0,
         (t["spectral_slope_db_oct"] + 15.0) / 15.0,
         t["percussive_energy_ratio"],
         t["saturation_index"],
@@ -81,11 +78,10 @@ def format_dossier_md(genome: dict) -> str:
     dur = int(m["duration_s"])
     dur_str = f"{dur // 60}:{dur % 60:02d}"
 
-    # Sort pitch gravity descending (top 8 shown compactly, all 12 in JSON)
     poly_sorted = sorted(p["polyphonic_chroma_gravity"].items(), key=lambda x: x[1], reverse=True)
     bass_sorted = sorted(p["bass_contour"]["pitch_class_gravity"].items(), key=lambda x: x[1], reverse=True)
     poly_str = " | ".join([f"{k}:{v:.1f}%" for k, v in poly_sorted[:7]])
-    bass_str = " | ".join([f"{k}:{v:.1f}%" for k, v in bass_sorted[:6]])
+    bass_str = " | ".join([f"{k}:{v:.1f}%" for k, v in bass_sorted[:6]]) if p["bass_contour"]["voiced_pct"] > 0 else "OFF"
 
     bc = p["bass_contour"]
     lc = p["lead_contour"]
@@ -97,15 +93,23 @@ def format_dossier_md(genome: dict) -> str:
     rw = t["somatic_6band"]["physical_raw_power_pct"]
     stems_db = " | ".join([f"{k}:{v:+.1f}dB" for k, v in d["stem_rms_global_db"].items()])
 
+    mk = p["modal_key"]
+    key_label = (
+        f"Ambiguous/Non-Diatonic (closest: {mk['tonic']} {mk['mode']}, conf {mk['confidence']:.3f} | alt: {mk['runner_up']})"
+        if mk.get("ambiguous")
+        else f"{mk['tonic']} {mk['mode']} (conf {mk['confidence']:.3f} | alt: {mk['runner_up']})"
+    )
+
+    rv = s["reverb_proxy"]
     lines = [
-        "=== LAYER 0 v2 GROUND-TRUTH AUDIO GENOME (DETERMINISTIC DSP — DO NOT CONTRADICT) ===",
+        f"=== LAYER 0 v{SCHEMA_VERSION} GROUND-TRUTH AUDIO GENOME (DETERMINISTIC DSP — DO NOT CONTRADICT) ===",
         f"TITLE: {m['title']} | ID: {m['track_id']} | DURATION: {dur_str} | DECOMP: {d['method']}",
         f"SOURCE: {m['source']}",
         f"SEED_ID: {m['seed_id'] or 'N/A'} | TAGS: {m['tags'] or 'N/A'} | CAPTURED: {m['captured_utc']}",
         f"STEM LEVELS (Global RMS): {stems_db}",
         "",
         "[AXIS 2: PITCH, HARMONY & MICROTONALITY]",
-        f"  Modal Key: {p['modal_key']['tonic']} {p['modal_key']['mode']} (conf {p['modal_key']['confidence']:.3f} | alt: {p['modal_key']['runner_up']})",
+        f"  Modal Scale: {key_label}",
         f"  Tuning: A4={p['a4_ref_hz']} Hz ({p['tuning_offset_cents']:+.1f}c) | Off-Grid 36-CQT: {p['microtonal_cqt_offgrid_pct']}% | HCDF Rate: {p['harmonic_change_rate_hz']}/s",
         f"  Sensory Roughness (Plomp-Levelt): Mean {p['sensory_roughness_mean']} | P90 {p['sensory_roughness_p90']}",
         f"  Polyphonic Gravity: {poly_str}",
@@ -116,7 +120,7 @@ def format_dossier_md(genome: dict) -> str:
         f"  Lead Intervals:     Steps(0-2st) {lc['intervals']['step_0_2']}% | Skips(3-5st) {lc['intervals']['skip_3_5']}% | Leaps(6-12st) {lc['intervals']['leap_6_12']}% | Wide(>12st) {lc['intervals']['wide_gt12']}%",
         "",
         "[AXIS 3: RHYTHM, METER & SOVEREIGN MICRO-TIMING]",
-        f"  Pulse & Meter: BPM {r['primary_bpm']} (Hypotheses: {hyps}) | Local Drift: {r['local_tempo_range_bpm'][0]}..{r['local_tempo_range_bpm'][1]} BPM (std {r['local_tempo_std_bpm']}) | Meter: {r['meter_hint']}",
+        f"  Pulse & Meter: BPM {r['primary_bpm']} (Hypotheses: {hyps}) | Local Drift: {r['local_tempo_range_bpm'][0]}..{r['local_tempo_range_bpm'][1]} BPM (std {r['local_tempo_std_bpm']}) | Meter: {r['meter_hint']} | Drone Sustain: {r['drone_sustain_index']}",
         f"  DRUMS Layer:   NPS {dl['nps']} | IOI Mean {dl['ioi_mean_ms']}ms / Med {dl['ioi_median_ms']}ms (IQR {dl['ioi_iqr_ms']}ms) | Entropy {dl['ioi_entropy']} | Swing {dl['swing_ratio']}",
         f"                 Hartzig R_H {dl['hartzig_residual_ms']}ms | 1/f Beta {dl['pink_noise_beta']} | DFA {dl['dfa_alpha']} | Syncopation {dl['syncopation_index']} | Attack {dl['attack_median_ms']}ms (P90 {dl['attack_p90_ms']}ms) | Ghost {dl['ghost_swell_pct']}%",
         f"  MELODIC Layer: NPS {ml['nps']} | IOI Mean {ml['ioi_mean_ms']}ms / Med {ml['ioi_median_ms']}ms (IQR {ml['ioi_iqr_ms']}ms) | Entropy {ml['ioi_entropy']} | Swing {ml['swing_ratio']}",
@@ -126,13 +130,13 @@ def format_dossier_md(genome: dict) -> str:
         f"  Perceptual (A-Wt): Sub(20-60) {aw['sub']}% | Bass(60-180) {aw['bass']}% | Chest(180-500) {aw['chest']}% | Presence(500-2.5k) {aw['presence']}% | Edge(2.5k-6k) {aw['edge']}% | Air(6k-16k) {aw['air']}%",
         f"  Physical (Raw |X|²): Sub {rw['sub']}% | Bass {rw['bass']}% | Chest {rw['chest']}% | Presence {rw['presence']}% | Edge {rw['edge']}% | Air {rw['air']}%",
         f"  Spectral Shape:    Centroid {t['centroid_hz']['mean']}Hz (P10 {t['centroid_hz']['p10']} / P90 {t['centroid_hz']['p90']}) | RollOff85 {t['rolloff_85_hz']['mean']}Hz | RollOff95 {t['rolloff_95_hz']['mean']}Hz | Slope {t['spectral_slope_db_oct']} dB/oct",
-        f"  Texture/Gain:      Flatness {t['spectral_flatness']['mean']} (P90 {t['spectral_flatness']['p90']}) | HNR {t['hnr_db']}dB | Percussive Ratio {t['percussive_energy_ratio']} | Saturation Index {t['saturation_index']} (0=clean, 1=wall)",
+        f"  Texture/Gain:      Flatness {t['spectral_flatness_db']['mean']}dB (P90 {t['spectral_flatness_db']['p90']}dB) | HNR {t['hnr_db']}dB | Percussive Ratio {t['percussive_energy_ratio']} | Saturation Index {t['saturation_index']} (0=clean, 1=wall)",
         "",
-        "[AXIS 5: LOUDNESS, DYNAMICS & SPATIAL FIELD]",
+        "[AXIS 5: LOUDNESS, DYNAMICS & SPLIT-SPACE FIELD]",
         f"  Loudness (R128):   Integrated {s['integrated_lufs']} LUFS | Range (LRA) {s['loudness_range_lra_lu']} LU | True Peak {s['true_peak_dbtp']} dBTP | Clipping {s['clipping_ratio_pct']}%",
         f"  Micro-Dynamics:    Mix Crest {s['crest_factor_db']} dB | Stem Crests: drums {s['stem_crest_db']['drums']}dB, bass {s['stem_crest_db']['bass']}dB, vocals {s['stem_crest_db']['vocals']}dB, other {s['stem_crest_db']['other']}dB",
         f"  Stereo Field:      Global Width {s['stereo_width_global']} (Low {s['stereo_width_bands']['low_lt250']} | Mid {s['stereo_width_bands']['mid_250_4k']} | High {s['stereo_width_bands']['high_gt4k']}) | Phase Corr {s['phase_correlation']} | L/R Bal {s['lr_balance_db']:+.2f}dB",
-        f"  Room / Decay:      Percussive -10dB Decay {s['reverb_proxy']['transient_decay_10db_ms']}ms | Dryness {s['reverb_proxy']['dryness_index']} | Side/Mid Ratio {s['reverb_proxy']['side_to_mid_ratio']}",
+        f"  Split-Space Room:  Profile: {rv['space_profile']} | Perc Dryness {rv['percussive_dryness']} ({rv['percussive_decay_10db_ms']}ms) | Harmonic Wetness {rv['harmonic_wetness']} (W {rv['harmonic_stereo_width']}, {rv['harmonic_decay_10db_ms']}ms)",
         "",
         "[AXIS 6: FUSED CHRONOLOGICAL STRUCTURE & PHASE TELEMETRY]",
     ]
@@ -142,7 +146,7 @@ def format_dossier_md(genome: dict) -> str:
         lines.append(
             f"  P{ph['index']:02d} [{ph['range']}] {ph['lufs']:>5.1f} LUFS (Cr {ph['crest_db']:>4.1f}dB, W {ph['stereo_width']:.2f}) | "
             f"Stems[{st_str}] | Bass:{ph['bass_center']} Lead:{ph['lead_range']} (ctr {ph['lead_center']}) | "
-            f"NPS D:{ph['drum_nps']:.1f}/M:{ph['melodic_nps']:.1f} | Bright:{int(ph['centroid_hz'])}Hz Flat:{ph['flatness']:.4f}"
+            f"NPS D:{ph['drum_nps']:.1f}/M:{ph['melodic_nps']:.1f} | Bright:{int(ph['centroid_hz'])}Hz Flat:{ph['flatness_db']:+.1f}dB"
         )
 
     lines.extend([
@@ -151,6 +155,13 @@ def format_dossier_md(genome: dict) -> str:
         "====================================================================================",
     ])
     return "\n".join(lines) + "\n"
+
+
+def _ensure_columns(cur, table: str, cols: list):
+    existing = {row[1] for row in cur.execute(f"PRAGMA table_info({table})").fetchall()}
+    for name, ctype in cols:
+        if name not in existing:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN {name} {ctype}")
 
 
 def upsert_sqlite(db_path: Path, genome: dict, vector: list, dossier_text: str):
@@ -185,6 +196,12 @@ def upsert_sqlite(db_path: Path, genome: dict, vector: list, dossier_text: str):
         dossier_md TEXT
     )""")
 
+    _ensure_columns(cur, "tracks", [
+        ("space_profile", "TEXT"),
+        ("flatness_db", "REAL"),
+        ("drone_sustain_index", "REAL"),
+    ])
+
     cur.execute("""
     CREATE TABLE IF NOT EXISTS phases (
         track_id TEXT,
@@ -207,6 +224,9 @@ def upsert_sqlite(db_path: Path, genome: dict, vector: list, dossier_text: str):
         PRIMARY KEY (track_id, phase_index)
     )""")
 
+    _ensure_columns(cur, "phases", [("flatness_db", "REAL")])
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_tracks_seed ON tracks(seed_id)")
+
     cur.execute("""
     CREATE VIRTUAL TABLE IF NOT EXISTS tracks_fts USING fts5(
         track_id UNINDEXED, title, seed_id, tags, notes, modal_key, dossier_md
@@ -219,26 +239,38 @@ def upsert_sqlite(db_path: Path, genome: dict, vector: list, dossier_text: str):
     s = genome["space_dynamics"]
 
     cur.execute("""
-    INSERT OR REPLACE INTO tracks VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    INSERT OR REPLACE INTO tracks (
+        track_id, schema_version, title, source, seed_id, tags, notes,
+        duration_s, decomp_method, captured_utc, bpm, modal_tonic, modal_mode,
+        integrated_lufs, lra_lu, crest_db, saturation_index,
+        lead_drift_gt15c_pct, lead_bend_count, stereo_width,
+        genome_json, acoustic_vector_json, dossier_md,
+        space_profile, flatness_db, drone_sustain_index
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         m["track_id"], SCHEMA_VERSION, m["title"], m["source"], m["seed_id"], m["tags"], m["notes"],
         m["duration_s"], genome["decomposition"]["method"], m["captured_utc"],
         r["primary_bpm"], p["modal_key"]["tonic"], p["modal_key"]["mode"],
         s["integrated_lufs"], s["loudness_range_lra_lu"], s["crest_factor_db"],
         t["saturation_index"], p["lead_contour"]["drift_gt15c_pct"], p["lead_contour"]["bend_count"],
-        s["stereo_width_global"], json.dumps(genome), json.dumps(vector), dossier_text
+        s["stereo_width_global"], json.dumps(genome), json.dumps(vector), dossier_text,
+        s["reverb_proxy"]["space_profile"], t["spectral_flatness_db"]["mean"], r["drone_sustain_index"]
     ))
 
     cur.execute("DELETE FROM phases WHERE track_id = ?", (m["track_id"],))
     for ph in genome["structure_phases"]:
         cur.execute("""
-        INSERT INTO phases VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO phases (
+            track_id, phase_index, start_s, end_s, lufs, crest_db, stereo_width,
+            drums_state, bass_state, vocals_state, other_state,
+            bass_center, lead_range, drum_nps, melodic_nps, centroid_hz, flatness_db
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             m["track_id"], ph["index"], ph["start_s"], ph["end_s"],
             ph["lufs"], ph["crest_db"], ph["stereo_width"],
             ph["stems"]["drums"], ph["stems"]["bass"], ph["stems"]["vocals"], ph["stems"]["other"],
             ph["bass_center"], ph["lead_range"], ph["drum_nps"], ph["melodic_nps"],
-            ph["centroid_hz"], ph["flatness"]
+            ph["centroid_hz"], ph["flatness_db"]
         ))
 
     cur.execute("DELETE FROM tracks_fts WHERE track_id = ?", (m["track_id"],))

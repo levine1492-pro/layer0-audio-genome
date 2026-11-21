@@ -1,11 +1,11 @@
-"""Axis 4: 6-Band Somatic Psychoacoustics (Raw + A-Weighted), Saturation, HNR & MFCCs."""
+"""Axis 4: 6-Band Somatic Psychoacoustics (Raw + A-Weighted), Log Flatness, HNR & MFCCs."""
 import numpy as np
 import librosa
 
 SOMATIC_BANDS = [
-    ("sub",      20.0,    60.0),
-    ("bass",     60.0,   180.0),
-    ("chest",   180.0,   500.0),
+    ("sub",       20.0,    60.0),
+    ("bass",      60.0,   180.0),
+    ("chest",    180.0,   500.0),
     ("presence", 500.0,  2500.0),
     ("edge",    2500.0,  6000.0),
     ("air",     6000.0, 16000.0),
@@ -13,7 +13,6 @@ SOMATIC_BANDS = [
 
 
 def _a_weighting_linear(freqs: np.ndarray) -> np.ndarray:
-    """Exact IEC 61672 A-weighting amplitude gain curve normalized to 1.0 at 1000 Hz."""
     f = np.maximum(freqs, 1.0)
     f2 = f ** 2
     ra = (12194.0 ** 2 * f2 ** 2) / (
@@ -53,20 +52,14 @@ def analyze_timbre_physics(decomp: dict, sr: int) -> dict:
     S_pow = S_mag ** 2
     freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
 
-    # A-weighted power spectrum (what human ears actually perceive)
     a_gain = _a_weighting_linear(freqs)[:, None]
     S_pow_aw = (S_mag * a_gain) ** 2
 
-    raw_energies = {}
-    aw_energies = {}
-    bands_db_frames = []
-
+    raw_energies, aw_energies, bands_db_frames = {}, {}, []
     for name, lo, hi in SOMATIC_BANDS:
         mask = (freqs >= lo) & (freqs < hi)
-        raw_e = float(np.sum(S_pow[mask, :]))
-        aw_e = float(np.sum(S_pow_aw[mask, :]))
-        raw_energies[name] = raw_e
-        aw_energies[name] = aw_e
+        raw_energies[name] = float(np.sum(S_pow[mask, :]))
+        aw_energies[name] = float(np.sum(S_pow_aw[mask, :]))
         frame_e = np.mean(S_pow_aw[mask, :], axis=0)
         bands_db_frames.append(10.0 * np.log10(frame_e + 1e-12))
 
@@ -80,25 +73,21 @@ def analyze_timbre_physics(decomp: dict, sr: int) -> dict:
         "perceptual_rel_db": {k: round(10.0 * np.log10((v + 1e-12) / aw_max), 2) for k, v in aw_energies.items()},
     }
 
-    # Spectral geometry
     centroid = librosa.feature.spectral_centroid(S=S_mag, sr=sr)[0]
     bandwidth = librosa.feature.spectral_bandwidth(S=S_mag, sr=sr)[0]
     rolloff_85 = librosa.feature.spectral_rolloff(S=S_mag, sr=sr, roll_percent=0.85)[0]
     rolloff_95 = librosa.feature.spectral_rolloff(S=S_mag, sr=sr, roll_percent=0.95)[0]
     flatness = librosa.feature.spectral_flatness(S=S_mag)[0]
+    flatness_db = 10.0 * np.log10(np.maximum(flatness, 1e-10))
     zcr = librosa.feature.zero_crossing_rate(y=mono, frame_length=n_fft, hop_length=hop)[0]
 
-    # Spectral flux (normalized frame-to-frame L2 change)
     S_norm = S_mag / (np.linalg.norm(S_mag, axis=0, keepdims=True) + 1e-12)
     flux = np.sqrt(np.sum(np.maximum(0.0, np.diff(S_norm, axis=1, prepend=S_norm[:, :1])) ** 2, axis=0))
 
-    # Spectral slope / tilt (dB per octave between 100 Hz and 10 kHz)
     slope_mask = (freqs >= 100.0) & (freqs <= 10000.0)
     mean_spec_db = 10.0 * np.log10(np.mean(S_pow[slope_mask, :], axis=1) + 1e-12)
-    log2_f = np.log2(freqs[slope_mask])
-    spectral_slope = float(np.polyfit(log2_f, mean_spec_db, 1)[0])
+    spectral_slope = float(np.polyfit(np.log2(freqs[slope_mask]), mean_spec_db, 1)[0])
 
-    # Harmonic-to-Noise Ratio (HNR) & Percussive Energy Ratio
     e_harm = float(np.mean(harm ** 2) + 1e-12)
     e_perc = float(np.mean(perc ** 2) + 1e-12)
     residual = mono - harm - perc
@@ -106,27 +95,25 @@ def analyze_timbre_physics(decomp: dict, sr: int) -> dict:
     hnr_db = 10.0 * np.log10(e_harm / (e_noise + 0.5 * e_perc))
     perc_ratio = e_perc / (e_harm + e_perc)
 
-    # Saturation / Distortion Texture Index (0=pure/clean, 1=heavy wall-of-distortion)
     edge_share = (aw_energies["edge"] + aw_energies["presence"]) / aw_tot
-    flat_term = min(1.0, float(np.mean(flatness)) / 0.06)
+    flat_term = min(1.0, max(0.0, (float(np.mean(flatness_db)) + 50.0) / 30.0))
     slope_term = min(1.0, max(0.0, (spectral_slope + 12.0) / 10.0))
     saturation_index = round(float(0.45 * flat_term + 0.35 * slope_term + 0.20 * edge_share), 3)
 
-    # 20 MFCCs + Deltas
     mfcc = librosa.feature.mfcc(y=mono, sr=sr, n_mfcc=20, hop_length=hop)
     mfcc_d = librosa.feature.delta(mfcc)
 
-    # 1-second aligned timeseries
     idx_edges = np.linspace(0, S_mag.shape[1], total_sec + 1).astype(int)
-    centroid_1s, flatness_1s, flux_1s = [], [], []
+    centroid_1s, flatness_1s, flatness_db_1s, flux_1s = [], [], [], []
     mfcc_1s = np.zeros((12, total_sec), dtype=np.float32)
     bands_db_1s = []
+    bands_arr = np.vstack(bands_db_frames)
 
-    bands_arr = np.vstack(bands_db_frames)  # (6, frames)
     for i in range(total_sec):
         s, e = idx_edges[i], max(idx_edges[i] + 1, idx_edges[i + 1])
         centroid_1s.append(round(float(np.mean(centroid[s:e])), 1))
-        flatness_1s.append(round(float(np.mean(flatness[s:e])), 5))
+        flatness_1s.append(round(float(np.mean(flatness[s:e])), 6))
+        flatness_db_1s.append(round(float(np.mean(flatness_db[s:e])), 1))
         flux_1s.append(round(float(np.mean(flux[s:e])), 4))
         mfcc_1s[:, i] = np.mean(mfcc[:12, s:e], axis=1)
         bands_db_1s.append([round(float(x), 1) for x in np.mean(bands_arr[:, s:e], axis=1)])
@@ -138,7 +125,8 @@ def analyze_timbre_physics(decomp: dict, sr: int) -> dict:
             "bandwidth_hz": _stat_pack(bandwidth, 1),
             "rolloff_85_hz": _stat_pack(rolloff_85, 1),
             "rolloff_95_hz": _stat_pack(rolloff_95, 1),
-            "spectral_flatness": _stat_pack(flatness, 5),
+            "spectral_flatness": _stat_pack(flatness, 6),
+            "spectral_flatness_db": _stat_pack(flatness_db, 1),
             "spectral_flux": _stat_pack(flux, 4),
             "zcr": _stat_pack(zcr, 4),
             "spectral_slope_db_oct": round(spectral_slope, 2),
@@ -152,6 +140,7 @@ def analyze_timbre_physics(decomp: dict, sr: int) -> dict:
         "timeseries": {
             "centroid_hz": centroid_1s,
             "flatness": flatness_1s,
+            "flatness_db": flatness_db_1s,
             "flux": flux_1s,
             "bands_db": bands_db_1s,
             "mfcc_1s": mfcc_1s,

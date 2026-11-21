@@ -1,25 +1,35 @@
-"""Axis 2: Pitch, Intonation, Microtonality, Polyphonic Harmony & Sensory Roughness."""
+"""Axis 2: Pitch, 5-Cent Microtonality, 17-Scale Global Modal Bank & Sensory Roughness."""
 import numpy as np
 import librosa
 from scipy.signal import find_peaks
 
 PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
 
-# Modal profiles (relative pitch-class weights anchored at tonic=0)
+# 17-Scale Global Bank: 7 Diatonic Modes + Non-Western, Blues, Pentatonic & Symmetric
 MODE_TEMPLATES = {
-    "Ionian (Major)":    [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],
-    "Aeolian (Minor)":   [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17],
-    "Dorian":            [6.20, 2.20, 3.80, 5.10, 2.30, 3.70, 2.40, 4.90, 2.50, 4.20, 3.60, 2.40],
-    "Phrygian":          [6.30, 4.60, 2.30, 4.90, 2.40, 3.80, 2.30, 4.80, 4.10, 2.30, 3.50, 2.40],
-    "Lydian":            [6.20, 2.20, 3.70, 2.30, 4.60, 2.40, 4.30, 5.10, 2.30, 3.60, 2.30, 3.40],
-    "Mixolydian":        [6.20, 2.20, 3.60, 2.30, 4.50, 3.90, 2.30, 5.10, 2.30, 3.50, 4.20, 2.30],
-    "Locrian":           [6.00, 4.30, 2.30, 4.70, 2.30, 3.90, 4.50, 2.20, 3.90, 2.30, 3.70, 2.30],
+    "Ionian (Major)":             [6.4, 1.0, 3.8, 1.0, 4.6, 4.1, 1.0, 5.3, 1.0, 3.8, 1.0, 3.5],
+    "Aeolian (Minor)":            [6.4, 1.0, 3.8, 5.1, 1.0, 4.0, 1.0, 5.2, 4.2, 1.0, 3.9, 1.0],
+    "Dorian":                     [6.4, 1.0, 3.9, 5.0, 1.0, 4.0, 1.0, 5.2, 1.0, 4.5, 3.9, 1.0],
+    "Phrygian":                   [6.4, 4.8, 1.0, 4.9, 1.0, 4.0, 1.0, 5.1, 4.2, 1.0, 3.8, 1.0],
+    "Lydian":                     [6.4, 1.0, 3.8, 1.0, 4.6, 1.0, 4.7, 5.2, 1.0, 3.8, 1.0, 3.6],
+    "Mixolydian":                 [6.4, 1.0, 3.8, 1.0, 4.6, 4.0, 1.0, 5.2, 1.0, 3.7, 4.6, 1.0],
+    "Locrian":                    [6.2, 4.6, 1.0, 4.8, 1.0, 4.0, 4.8, 1.0, 4.1, 1.0, 3.8, 1.0],
+    "Phrygian Dominant (Hijaz)":  [6.5, 5.1, 1.0, 1.0, 5.0, 4.0, 1.0, 5.2, 4.2, 1.0, 4.1, 1.0],
+    "Harmonic Minor":             [6.5, 1.0, 3.7, 5.0, 1.0, 4.0, 1.0, 5.2, 4.4, 1.0, 1.0, 4.6],
+    "Double Harmonic (Byzantine)":[6.5, 5.0, 1.0, 1.0, 4.9, 4.0, 1.0, 5.2, 4.5, 1.0, 1.0, 4.7],
+    "Hungarian Minor":            [6.5, 1.0, 3.7, 5.0, 1.0, 1.0, 4.9, 5.2, 4.4, 1.0, 1.0, 4.5],
+    "Melodic Minor":              [6.4, 1.0, 3.8, 5.0, 1.0, 4.0, 1.0, 5.2, 1.0, 4.3, 1.0, 4.3],
+    "Minor Blues":                [6.6, 0.8, 0.8, 5.4, 0.8, 4.6, 4.9, 5.3, 0.8, 0.8, 4.6, 0.8],
+    "Major Blues":                [6.6, 0.8, 4.4, 4.8, 5.2, 0.8, 0.8, 5.3, 0.8, 4.6, 0.8, 0.8],
+    "Minor Pentatonic":           [6.6, 0.8, 0.8, 5.4, 0.8, 4.8, 0.8, 5.4, 0.8, 0.8, 4.8, 0.8],
+    "Major Pentatonic":           [6.6, 0.8, 4.6, 0.8, 5.2, 0.8, 0.8, 5.4, 0.8, 4.6, 0.8, 0.8],
+    "Octatonic (Diminished)":     [6.0, 1.0, 4.4, 4.6, 1.0, 4.4, 4.6, 1.0, 4.4, 4.6, 1.0, 4.4],
 }
 
 
 def hz_to_note_cents(hz: float, a4_hz: float = 440.0) -> str:
     if hz is None or not np.isfinite(hz) or hz <= 0:
-        return "N/A"
+        return "OFF"
     midi = 69.0 + 12.0 * np.log2(hz / a4_hz)
     nearest = int(np.round(midi))
     cents = int(np.round((midi - nearest) * 100.0))
@@ -30,15 +40,31 @@ def hz_to_note_cents(hz: float, a4_hz: float = 440.0) -> str:
     return f"{pc}{octave}{cents:+d}c"
 
 
-def _run_pyin_contour(y: np.ndarray, sr: int, fmin: float, fmax: float, hop: int = 512):
+def _empty_contour() -> dict:
+    return {
+        "voiced_pct": 0.0, "range_low": "OFF", "range_high": "OFF",
+        "center_note": "OFF", "center_hz": None,
+        "drift_gt15c_pct": 0.0, "drift_gt25c_pct": 0.0,
+        "cent_mean": 0.0, "cent_std": 0.0, "cent_skew": 0.0,
+        "cent_histogram_5c": [0.0] * 20,
+        "pitch_class_gravity": {pc: 0.0 for pc in PITCH_CLASSES},
+        "bend_count": 0, "bend_up_pct": 0.0, "bend_max_cents": 0.0,
+        "vibrato_pct": 0.0, "vibrato_rate_hz": 0.0, "vibrato_depth_cents": 0.0,
+        "intervals": {"step_0_2": 0.0, "skip_3_5": 0.0, "leap_6_12": 0.0, "wide_gt12": 0.0},
+    }
+
+
+def _run_pyin_contour(y: np.ndarray, sr: int, mix_rms: float, fmin: float, fmax: float, hop: int = 512):
     rms = float(np.sqrt(np.mean(y ** 2) + 1e-12))
-    if rms < 1e-4:
-        n_frames = max(1, 1 + len(y) // hop)
+    n_frames = max(1, 1 + len(y) // hop)
+    # Silent-stem guard (< 3% of mix RMS or absolute noise floor)
+    if rms < 1e-4 or rms < 0.03 * mix_rms:
         return np.full(n_frames, np.nan), np.zeros(n_frames, dtype=bool)
     f0, voiced, probs = librosa.pyin(
-        y, fmin=fmin, fmax=fmax, sr=sr, hop_length=hop, fill_na=np.nan
+        y, fmin=fmin, fmax=fmax, sr=sr, hop_length=hop,
+        resolution=0.05, fill_na=np.nan
     )
-    valid = voiced & np.isfinite(f0) & (f0 > 0) & (probs > 0.25)
+    valid = voiced & np.isfinite(f0) & (f0 > 0) & (probs > 0.15)
     f0_clean = np.where(valid, f0, np.nan)
     return f0_clean, valid
 
@@ -46,43 +72,34 @@ def _run_pyin_contour(y: np.ndarray, sr: int, fmin: float, fmax: float, hop: int
 def _contour_stats(f0: np.ndarray, sr: int, hop: int, a4_hz: float) -> dict:
     valid_idx = np.where(np.isfinite(f0) & (f0 > 0))[0]
     total_frames = len(f0)
-    if len(valid_idx) < 5:
-        return {
-            "voiced_pct": 0.0, "range_low": "N/A", "range_high": "N/A",
-            "center_note": "N/A", "center_hz": None,
-            "drift_gt15c_pct": 0.0, "drift_gt25c_pct": 0.0,
-            "cent_mean": 0.0, "cent_std": 0.0, "cent_skew": 0.0,
-            "cent_histogram_5c": [0] * 20,
-            "pitch_class_gravity": {pc: 0.0 for pc in PITCH_CLASSES},
-            "bend_count": 0, "bend_up_pct": 0.0, "bend_max_cents": 0.0,
-            "vibrato_pct": 0.0, "vibrato_rate_hz": 0.0, "vibrato_depth_cents": 0.0,
-            "intervals": {"step_0_2": 0.0, "skip_3_5": 0.0, "leap_6_12": 0.0, "wide_gt12": 0.0},
-        }
+    if len(valid_idx) < 20:
+        return _empty_contour()
 
     vals = f0[valid_idx]
     midi = 69.0 + 12.0 * np.log2(vals / a4_hz)
     nearest = np.round(midi).astype(int)
     cents = (midi - nearest) * 100.0
 
-    # 5-cent histogram from -50 to +50 (20 bins)
+    # True 5-cent histogram (-50 to +50 in 20 bins)
     hist, _ = np.histogram(cents, bins=20, range=(-50.0, 50.0))
     hist_pct = [round(100.0 * float(h) / len(cents), 2) for h in hist]
 
-    # Pitch class gravity
     pc_counts = np.bincount(nearest % 12, minlength=12)
     pc_grav = {
         PITCH_CLASSES[i]: round(100.0 * float(pc_counts[i]) / len(nearest), 2)
         for i in range(12)
     }
 
-    # Skewness of cent deviations (+ skew = upward bends!)
     c_mean = float(np.mean(cents))
     c_std = float(np.std(cents) + 1e-8)
     c_skew = float(np.mean(((cents - c_mean) / c_std) ** 3))
 
-    # Contiguous voiced segments for bends, vibrato, and melodic intervals
     frame_dt = hop / sr
-    midi_full = np.where(np.isfinite(f0) & (f0 > 0), 69.0 + 12.0 * np.log2(np.maximum(f0, 1e-6) / a4_hz), np.nan)
+    midi_full = np.where(
+        np.isfinite(f0) & (f0 > 0),
+        69.0 + 12.0 * np.log2(np.maximum(f0, 1e-6) / a4_hz),
+        np.nan
+    )
 
     bends_up, bends_down, max_bend = 0, 0, 0.0
     vib_frames, vib_rates, vib_depths = 0, [], []
@@ -100,11 +117,9 @@ def _contour_stats(f0: np.ndarray, sr: int, hop: int, a4_hz: float) -> dict:
             continue
         seg_medians.append(float(np.median(seg)))
 
-        # Bend/glissando detection over ~180ms rolling window
         win = max(3, int(round(0.18 / frame_dt)))
         if len(seg) > win:
             deltas_cents = (seg[win:] - seg[:-win]) * 100.0
-            # Peak excursions > 45c and < 400c (exclude abrupt octave leaps)
             pos_peaks, _ = find_peaks(deltas_cents, height=(45.0, 400.0), distance=win)
             neg_peaks, _ = find_peaks(-deltas_cents, height=(45.0, 400.0), distance=win)
             bends_up += len(pos_peaks)
@@ -114,7 +129,6 @@ def _contour_stats(f0: np.ndarray, sr: int, hop: int, a4_hz: float) -> dict:
             if len(neg_peaks):
                 max_bend = max(max_bend, float(np.max(-deltas_cents[neg_peaks])))
 
-        # Vibrato detection on sustained notes >= 0.35s
         if dur >= 0.35:
             x = np.arange(len(seg))
             poly = np.polyfit(x, seg, 1)
@@ -128,12 +142,11 @@ def _contour_stats(f0: np.ndarray, sr: int, hop: int, a4_hz: float) -> dict:
                 pk_idx = int(np.argmax(sub_spec))
                 depth_est = float(np.std(detrended_c) * np.sqrt(2.0))
                 ratio = float(sub_spec[pk_idx] / (np.sum(spec[1:]) + 1e-8))
-                if depth_est >= 12.0 and depth_est <= 150.0 and ratio > 0.12:
+                if 12.0 <= depth_est <= 150.0 and ratio > 0.12:
                     vib_frames += len(seg)
                     vib_rates.append(float(sub_freqs[pk_idx]))
                     vib_depths.append(depth_est)
 
-    # Melodic intervals between phrase/note segments
     intervals = {"step_0_2": 0.0, "skip_3_5": 0.0, "leap_6_12": 0.0, "wide_gt12": 0.0}
     if len(seg_medians) >= 2:
         diffs = np.abs(np.diff(seg_medians))
@@ -172,7 +185,6 @@ def _contour_stats(f0: np.ndarray, sr: int, hop: int, a4_hz: float) -> dict:
 
 
 def _sensory_roughness(y: np.ndarray, sr: int, n_fft: int = 4096, hop: int = 2048):
-    """Sethares / Plomp-Levelt physics-based sensory roughness across top spectral peaks."""
     S = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop))
     freqs = librosa.fft_frequencies(sr=sr, n_fft=n_fft)
     valid_bins = (freqs >= 40.0) & (freqs <= 8000.0)
@@ -188,10 +200,7 @@ def _sensory_roughness(y: np.ndarray, sr: int, n_fft: int = 4096, hop: int = 204
         pks, _ = find_peaks(col, distance=2)
         if len(pks) < 2:
             continue
-        if len(pks) > K:
-            top = pks[np.argpartition(col[pks], -K)[-K:]]
-        else:
-            top = pks
+        top = pks[np.argpartition(col[pks], -K)[-K:]] if len(pks) > K else pks
         fp = f_sub[top]
         ap = col[top]
         norm = float(np.sum(ap ** 2) + 1e-12)
@@ -205,11 +214,17 @@ def _sensory_roughness(y: np.ndarray, sr: int, n_fft: int = 4096, hop: int = 204
     return rough_frames
 
 
-def _estimate_modal_key(chroma_vec: np.ndarray) -> dict:
-    best_corr = -2.0
-    best_tonic = "A"
-    best_mode = "Aeolian (Minor)"
-    c_norm = chroma_vec - np.mean(chroma_vec)
+def _estimate_modal_key(poly_vec: np.ndarray, lead_stats: dict) -> dict:
+    # Fuse polyphonic chroma (70%) + lead melodic gravity (30%) when lead is active
+    p_norm = poly_vec / (np.sum(poly_vec) + 1e-12)
+    if lead_stats["voiced_pct"] >= 15.0:
+        l_vec = np.array([lead_stats["pitch_class_gravity"][pc] for pc in PITCH_CLASSES], dtype=np.float64)
+        l_norm = l_vec / (np.sum(l_vec) + 1e-12)
+        blended = 0.65 * p_norm + 0.35 * l_norm
+    else:
+        blended = p_norm
+
+    c_norm = blended - np.mean(blended)
     c_den = np.linalg.norm(c_norm) + 1e-12
 
     candidates = []
@@ -220,17 +235,15 @@ def _estimate_modal_key(chroma_vec: np.ndarray) -> dict:
             s_norm = shifted - np.mean(shifted)
             corr = float(np.dot(c_norm, s_norm) / (c_den * (np.linalg.norm(s_norm) + 1e-12)))
             candidates.append((corr, PITCH_CLASSES[root], mode_name))
-            if corr > best_corr:
-                best_corr = corr
-                best_tonic = PITCH_CLASSES[root]
-                best_mode = mode_name
 
     candidates.sort(reverse=True)
+    best_corr, best_tonic, best_mode = candidates[0]
     runner_up = f"{candidates[1][1]} {candidates[1][2]} ({candidates[1][0]:.2f})"
     return {
         "tonic": best_tonic,
         "mode": best_mode,
         "confidence": round(best_corr, 3),
+        "ambiguous": bool(best_corr < 0.70),
         "runner_up": runner_up,
     }
 
@@ -257,22 +270,20 @@ def analyze_pitch_harmony(decomp: dict, sr: int) -> dict:
     harm = decomp["harmonic_mix"]
     bass_y = decomp["stems_mono"]["bass"]
     lead_y = decomp["lead_carrier"]
+    mix_rms = float(np.sqrt(np.mean(mono ** 2) + 1e-12))
     total_sec = max(1, int(np.floor(len(mono) / sr)))
     hop = 512
 
-    # 1. Tuning calibration
     tuning_bins = float(librosa.estimate_tuning(y=harm, sr=sr, bins_per_octave=36))
     tuning_cents = tuning_bins * (100.0 / 3.0)
     a4_hz = 440.0 * (2.0 ** (tuning_cents / 1200.0))
 
-    # 2. Stem-isolated pYIN contours
-    bass_f0, _ = _run_pyin_contour(bass_y, sr, fmin=28.0, fmax=350.0, hop=hop)
-    lead_f0, _ = _run_pyin_contour(lead_y, sr, fmin=180.0, fmax=2400.0, hop=hop)
+    bass_f0, _ = _run_pyin_contour(bass_y, sr, mix_rms, fmin=28.0, fmax=350.0, hop=hop)
+    lead_f0, _ = _run_pyin_contour(lead_y, sr, mix_rms, fmin=140.0, fmax=2400.0, hop=hop)
 
     bass_stats = _contour_stats(bass_f0, sr, hop, a4_hz)
     lead_stats = _contour_stats(lead_f0, sr, hop, a4_hz)
 
-    # 3. Polyphonic 12-bin Chroma + 36-bin Microtonal CQT
     chroma12 = librosa.feature.chroma_cqt(y=harm, sr=sr, hop_length=hop, tuning=tuning_bins)
     chroma_mean = np.mean(chroma12, axis=1)
     chroma_pct = chroma_mean / (np.sum(chroma_mean) + 1e-12) * 100.0
@@ -282,22 +293,22 @@ def analyze_pitch_harmony(decomp: dict, sr: int) -> dict:
         y=harm, sr=sr, hop_length=hop, n_chroma=36, bins_per_octave=36, tuning=tuning_bins
     )
     c36_mean = np.mean(chroma36, axis=1)
-    # Off-grid third-semitone energy (indices not divisible by 3)
     off_grid_mask = np.array([i % 3 != 0 for i in range(36)])
     microtonal_cqt_ratio = float(np.sum(c36_mean[off_grid_mask]) / (np.sum(c36_mean) + 1e-12))
 
-    modal_key = _estimate_modal_key(chroma_mean)
+    modal_key = _estimate_modal_key(chroma_mean, lead_stats)
 
-    # 4. Tonnetz & Harmonic Change Detection Function (HCDF)
     tonnetz = librosa.feature.tonnetz(chroma=chroma12)
     hcdf_frames = np.linalg.norm(np.diff(tonnetz, axis=1, prepend=tonnetz[:, :1]), axis=0)
-    hcdf_peaks, _ = find_peaks(hcdf_frames, height=float(np.mean(hcdf_frames) + np.std(hcdf_frames)), distance=int(0.5 * sr / hop))
+    hcdf_peaks, _ = find_peaks(
+        hcdf_frames,
+        height=float(np.mean(hcdf_frames) + np.std(hcdf_frames)),
+        distance=int(0.5 * sr / hop)
+    )
     hcdf_rate = float(len(hcdf_peaks) / max(1.0, len(mono) / sr))
 
-    # 5. Physics-based Sensory Roughness (Plomp-Levelt)
     rough_frames = _sensory_roughness(mono, sr)
 
-    # 1-second aligned arrays
     chroma_1s = np.zeros((12, total_sec), dtype=np.float32)
     idx_edges = np.linspace(0, chroma12.shape[1], total_sec + 1).astype(int)
     for i in range(total_sec):

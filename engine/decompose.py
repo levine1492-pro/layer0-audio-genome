@@ -64,7 +64,7 @@ def decompose_signal(stereo: np.ndarray, sr: int, use_demucs: bool = True) -> di
             sources = (sources * ref_std + ref_mean).cpu().numpy()
 
             for idx, name in enumerate(model.sources):
-                st = sources[idx].astype(np.float32)  # (2, N)
+                st = sources[idx].astype(np.float32)
                 stems_stereo[name] = st
                 stems_mono[name] = (0.5 * (st[0] + st[1])).astype(np.float32)
             method = "htdemucs_4stem"
@@ -75,16 +75,19 @@ def decompose_signal(stereo: np.ndarray, sr: int, use_demucs: bool = True) -> di
         stems_mono = {
             "drums": perc_mix.astype(np.float32),
             "bass": _bandpass(harm_mix, sr, high=240.0),
-            "vocals": _bandpass(harm_mix, sr, low=240.0, high=3200.0),
-            "other": _bandpass(harm_mix, sr, low=180.0),
+            "vocals": _bandpass(harm_mix, sr, low=220.0, high=3200.0),
+            "other": _bandpass(harm_mix, sr, low=140.0),
         }
         for k, v in stems_mono.items():
             stems_stereo[k] = np.stack([v, v], axis=0)
 
-    # Unified lead/melodic carrier: captures vocals, lead guitars, solo instruments without bass bleed
+    # Unified lead/melodic carrier (140 Hz - 5.5 kHz captures cello/baritone/harmonica/guitar/vocals)
     other_harm, _ = librosa.effects.hpss(stems_mono["other"], margin=1.5)
     lead_raw = stems_mono["vocals"] + other_harm
-    lead_carrier = _bandpass(lead_raw, sr, low=200.0, high=5500.0)
+    lead_carrier = _bandpass(lead_raw, sr, low=140.0, high=5500.0)
+
+    # Stereo harmonic bed (other + vocals) for split-space ambience forensics
+    harmonic_bed_stereo = stems_stereo["other"] + stems_stereo["vocals"]
 
     stem_db_1s = {k: _rms_db_1s(v, sr) for k, v in stems_mono.items()}
     stem_rms_global_db = {
@@ -103,6 +106,7 @@ def decompose_signal(stereo: np.ndarray, sr: int, use_demucs: bool = True) -> di
         "stems_mono": stems_mono,
         "stems_stereo": stems_stereo,
         "lead_carrier": lead_carrier,
+        "harmonic_bed_stereo": harmonic_bed_stereo,
         "stem_db_1s": stem_db_1s,
         "stem_rms_global_db": stem_rms_global_db,
     }

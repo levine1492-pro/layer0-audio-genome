@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Layer 0 v2 Audio Genome Pipeline Orchestrator."""
+"""Layer 0 v2.1 Audio Genome Pipeline Orchestrator."""
 import argparse
 import datetime
 import shutil
@@ -53,16 +53,17 @@ def process_entry(entry: dict, repo_root: Path, use_demucs: bool, force: bool) -
         print(f"    [Axis 1] Decomposed via {decomp['method']}")
 
         pitch = analyze_pitch_harmony(decomp, sr)
-        print(f"    [Axis 2] Pitch/Harmony: {pitch['summary']['modal_key']['tonic']} {pitch['summary']['modal_key']['mode']}")
+        mk = pitch["summary"]["modal_key"]
+        print(f"    [Axis 2] Pitch/Harmony: {mk['tonic']} {mk['mode']} (conf {mk['confidence']}, amb={mk['ambiguous']})")
 
         rhythm = analyze_rhythm_forensics(decomp, sr)
-        print(f"    [Axis 3] Rhythm: {rhythm['summary']['primary_bpm']} BPM")
+        print(f"    [Axis 3] Rhythm: {rhythm['summary']['primary_bpm']} BPM | Drone {rhythm['summary']['drone_sustain_index']}")
 
         timbre = analyze_timbre_physics(decomp, sr)
-        print(f"    [Axis 4] Timbre: Centroid {timbre['summary']['centroid_hz']['mean']}Hz | Sat {timbre['summary']['saturation_index']}")
+        print(f"    [Axis 4] Timbre: Centroid {timbre['summary']['centroid_hz']['mean']}Hz | Flat {timbre['summary']['spectral_flatness_db']['mean']}dB")
 
         space = analyze_space_dynamics(decomp, sr)
-        print(f"    [Axis 5] Dynamics/Space: {space['summary']['integrated_lufs']} LUFS | LRA {space['summary']['loudness_range_lra_lu']} LU")
+        print(f"    [Axis 5] Space: {space['summary']['integrated_lufs']} LUFS | {space['summary']['reverb_proxy']['space_profile']}")
 
         phases = analyze_structure(decomp, pitch, rhythm, timbre, space, sr)
         print(f"    [Axis 6] Structure: {len(phases)} fused phases detected")
@@ -105,19 +106,20 @@ def process_entry(entry: dict, repo_root: Path, use_demucs: bool, force: bool) -
             "melodic_nps": rhythm["timeseries"]["melodic_nps"][:T],
             "centroid_hz": timbre["timeseries"]["centroid_hz"][:T],
             "flatness": timbre["timeseries"]["flatness"][:T],
+            "flatness_db": timbre["timeseries"]["flatness_db"][:T],
             "flux": timbre["timeseries"]["flux"][:T],
             "bands_db": timbre["timeseries"]["bands_db"][:T],
         }
 
         out_dir = save_outputs(repo_root, genome, timeseries)
-        print(f"    [Axis 7] Saved genome, timeseries.json.gz, dossier.md & SQLite -> {out_dir}")
+        print(f"    [Axis 7] Saved v{SCHEMA_VERSION} genome, timeseries, dossier & SQLite -> {out_dir}")
         return track_id
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Layer 0 v2 Audio Genome Engine")
+    parser = argparse.ArgumentParser(description="Layer 0 v2.1 Audio Genome Engine")
     parser.add_argument("--fast", action="store_true", help="Skip Demucs neural stems (pure DSP fallback)")
     parser.add_argument("--force", action="store_true", help="Reprocess tracks even if already in SQLite DB")
     parser.add_argument("--file", type=str, default="", help="Process a single local file or URL directly")
