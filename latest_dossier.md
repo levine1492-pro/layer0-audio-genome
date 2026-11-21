@@ -1,54 +1,52 @@
-=== LAYER 0 v2 GROUND-TRUTH AUDIO GENOME (DETERMINISTIC DSP — DO NOT CONTRADICT) ===
-TITLE: dune1 | ID: 718f3255e28e | DURATION: 3:25 | DECOMP: htdemucs_4stem
-SOURCE: https://drive.google.com/file/d/1Aq0OuaTx_uYsNLhBcuh-fBwkCsxUPInA/view?usp=drivesdk
-SEED_ID: N/A | TAGS: N/A | CAPTURED: 2026-11-21T22:28:29Z
-STEM LEVELS (Global RMS): drums:-80.7dB | bass:-56.5dB | other:-34.1dB | vocals:-39.0dB
+=== LAYER 0 v2.1.0 GROUND-TRUTH AUDIO GENOME (DETERMINISTIC DSP — DO NOT CONTRADICT) ===
+TITLE: Harmonica Meditation | ID: fe042008e8cf | DURATION: 3:08 | DECOMP: htdemucs_4stem
+SOURCE: https://drive.google.com/file/d/1abvwKmbqDClhmHBuGNmw8ULjTE1y4t45/view?usp=drivesdk
+SEED_ID: N/A | TAGS: N/A | CAPTURED: 2026-11-21T22:57:31Z
+STEM LEVELS (Global RMS): drums:-28.3dB | bass:-24.4dB | other:-21.6dB | vocals:-34.3dB
 
 [AXIS 2: PITCH, HARMONY & MICROTONALITY]
-  Modal Key: A Ionian (Major) (conf 0.638 | alt: A Mixolydian (0.62))
-  Tuning: A4=441.19 Hz (+4.7c) | Off-Grid 36-CQT: 60.13% | HCDF Rate: 1.156/s
-  Sensory Roughness (Plomp-Levelt): Mean 0.0431 | P90 0.0762
-  Polyphonic Gravity: A:15.9% | D:13.0% | E:11.3% | D#:11.3% | G:8.0% | F#:7.4% | C:7.0%
-  Bass Stem Gravity:  G:83.3% | E:16.7% | C:0.0% | C#:0.0% | D:0.0% | D#:0.0%
-  Bass F0 Contour:    Voiced 0.03% | Range F2-35c..G2+34c (Center G2+12c) | Drift>15c 66.67%
-  Lead F0 Contour:    Voiced 23.52% | Range A3-2c..G4-2c (Center D4+8c) | Drift>15c 2.68% (>25c 0.29%)
-  Lead Expressivity:  Cent Skew -0.629 | Bends 0 (0.0% up, max 0.0c) | Vibrato 0.0% (0.0Hz, ±0.0c)
-  Lead Intervals:     Steps(0-2st) 89.93% | Skips(3-5st) 3.36% | Leaps(6-12st) 6.71% | Wide(>12st) 0.0%
+  Modal Scale: G Ionian (Major) (conf 0.880 | alt: G Major Pentatonic (0.78))
+  Tuning: A4=440.68 Hz (+2.7c) | Off-Grid 36-CQT: 58.6% | HCDF Rate: 0.658/s
+  Sensory Roughness (Plomp-Levelt): Mean 0.0492 | P90 0.0826
+  Polyphonic Gravity: G:21.9% | D:18.8% | C:9.1% | B:7.8% | F#:7.3% | A:6.8% | E:6.7%
+  Bass Stem Gravity:  D:45.4% | C:24.4% | E:15.2% | G:8.7% | F#:3.2% | B:1.7%
+  Bass F0 Contour:    Voiced 32.27% | Range C2+9c..G2+19c (Center D2+14c) | Drift>15c 40.65%
+  Lead F0 Contour:    Voiced 37.97% | Range D3+5c..C5-35c (Center A3-40c) | Drift>15c 29.15% (>25c 16.73%)
+  Lead Expressivity:  Cent Skew -0.048 | Bends 21 (52.4% up, max 195.0c) | Vibrato 5.6% (4.75Hz, ±31.2c)
+  Lead Intervals:     Steps(0-2st) 71.2% | Skips(3-5st) 15.6% | Leaps(6-12st) 11.6% | Wide(>12st) 1.6%
 
 [AXIS 3: RHYTHM, METER & SOVEREIGN MICRO-TIMING]
-  Pulse & Meter: BPM 126.05 (Hypotheses: 129.2 (1.00)) | Local Drift: 120.2..139.7 BPM (std 8.36) | Meter: Duple/Quad (4/4 or 2/4)
-  DRUMS Layer:   NPS 0.0 | IOI Mean 0.0ms / Med 0.0ms (IQR 0.0ms) | Entropy 0.0 | Swing 1.0
-                 Hartzig R_H 0.0ms | 1/f Beta 0.0 | DFA 0.5 | Syncopation 0.0 | Attack 0.0ms (P90 0.0ms) | Ghost 0.0%
-  MELODIC Layer: NPS 5.127 | IOI Mean 194.7ms / Med 150.9ms (IQR 139.3ms) | Entropy 0.785 | Swing 1.5
-                 Hartzig R_H 29.0ms | 1/f Beta 0.105 | DFA 0.61 | Syncopation 0.602 | Attack 63.9ms (P90 180.0ms) | Ghost 50.3%
+  Pulse & Meter: BPM 132.51 (Hypotheses: 132.5 (1.00), 66.3 (0.70), 184.6 (0.66)) | Local Drift: 129.2..136.0 BPM (std 3.34) | Meter: Duple/Quad (4/4 or 2/4) | Drone Sustain: 0.945
+  DRUMS Layer:   NPS 0.722 | IOI Mean 1213.2ms / Med 882.4ms (IQR 882.4ms) | Entropy 0.472 | Swing 1.026
+                 Hartzig R_H 11.6ms | 1/f Beta 0.35 | DFA 0.511 | Syncopation 0.0 | Attack 29.0ms (P90 46.4ms) | Ghost 0.0%
+  MELODIC Layer: NPS 1.577 | IOI Mean 608.7ms / Med 452.8ms (IQR 638.5ms) | Entropy 0.802 | Swing 1.449
+                 Hartzig R_H 11.6ms | 1/f Beta 0.097 | DFA 0.649 | Syncopation 0.195 | Attack 34.8ms (P90 156.7ms) | Ghost 31.6%
 
 [AXIS 4: TIMBRE, SATURATION & 6-BAND SOMATIC PSYCHOACOUSTICS]
-  Perceptual (A-Wt): Sub(20-60) 0.0% | Bass(60-180) 0.13% | Chest(180-500) 5.12% | Presence(500-2.5k) 79.26% | Edge(2.5k-6k) 15.44% | Air(6k-16k) 0.05%
-  Physical (Raw |X|²): Sub 2.24% | Bass 3.9% | Chest 19.26% | Presence 64.75% | Edge 9.8% | Air 0.05%
-  Spectral Shape:    Centroid 1762.3Hz (P10 1334.7 / P90 2240.0) | RollOff85 3009.7Hz | RollOff95 4751.0Hz | Slope -9.66 dB/oct
-  Texture/Gain:      Flatness 0.00021 (P90 0.00011) | HNR 7.45dB | Percussive Ratio 0.018 | Saturation Index 0.273 (0=clean, 1=wall)
+  Perceptual (A-Wt): Sub(20-60) 0.1% | Bass(60-180) 8.47% | Chest(180-500) 63.42% | Presence(500-2.5k) 27.47% | Edge(2.5k-6k) 0.52% | Air(6k-16k) 0.03%
+  Physical (Raw |X|²): Sub 14.68% | Bass 47.9% | Chest 33.34% | Presence 4.04% | Edge 0.04% | Air 0.01%
+  Spectral Shape:    Centroid 716.0Hz (P10 291.1 / P90 1175.4) | RollOff85 970.1Hz | RollOff95 3036.4Hz | Slope -9.85 dB/oct
+  Texture/Gain:      Flatness -62.5dB (P90 -53.4dB) | HNR 8.93dB | Percussive Ratio 0.017 | Saturation Index 0.131 (0=clean, 1=wall)
 
-[AXIS 5: LOUDNESS, DYNAMICS & SPATIAL FIELD]
-  Loudness (R128):   Integrated -28.6 LUFS | Range (LRA) 9.78 LU | True Peak -13.84 dBTP | Clipping 0.0%
-  Micro-Dynamics:    Mix Crest 18.44 dB | Stem Crests: drums 41.93dB, bass 19.67dB, vocals 24.21dB, other 19.81dB
-  Stereo Field:      Global Width 0.0 (Low 0.0 | Mid 0.0 | High 0.001) | Phase Corr 1.0 | L/R Bal +0.00dB
-  Room / Decay:      Percussive -10dB Decay 156.7ms | Dryness 0.424 | Side/Mid Ratio 0.0
+[AXIS 5: LOUDNESS, DYNAMICS & SPLIT-SPACE FIELD]
+  Loudness (R128):   Integrated -16.65 LUFS | Range (LRA) 6.14 LU | True Peak -2.75 dBTP | Clipping 0.0%
+  Micro-Dynamics:    Mix Crest 15.66 dB | Stem Crests: drums 23.64dB, bass 18.95dB, vocals 25.53dB, other 18.08dB
+  Stereo Field:      Global Width 0.292 (Low 0.257 | Mid 0.357 | High 0.367) | Phase Corr 0.725 | L/R Bal -1.83dB
+  Split-Space Room:  Profile: Split-Space (Dry Drums + Ambient Bed) | Perc Dryness 0.82 (69.7ms) | Harmonic Wetness 0.984 (W 0.346, 500.0ms)
 
 [AXIS 6: FUSED CHRONOLOGICAL STRUCTURE & PHASE TELEMETRY]
-  P01 [00:00-00:14] -34.5 LUFS (Cr 13.1dB, W 0.00) | Stems[D:OFF B:OFF V:OFF O:MID] | Bass:OFF Lead:A3-2c..A3+8c (ctr A3+8c) | NPS D:0.0/M:4.2 | Bright:1250Hz Flat:0.0022
-  P02 [00:14-00:25] -28.1 LUFS (Cr 13.9dB, W 0.00) | Stems[D:OFF B:OFF V:OFF O:HIGH] | Bass:OFF Lead:D4-12c..D4-2c (ctr D4-2c) | NPS D:0.0/M:5.0 | Bright:1646Hz Flat:0.0000
-  P03 [00:25-00:36] -26.1 LUFS (Cr 15.1dB, W 0.00) | Stems[D:OFF B:OFF V:MID O:MID] | Bass:OFF Lead:A3-2c..D#4-2c (ctr D#4-2c) | NPS D:0.0/M:6.3 | Bright:1942Hz Flat:0.0000
-  P04 [00:36-00:53] -27.9 LUFS (Cr 13.9dB, W 0.00) | Stems[D:OFF B:OFF V:MID O:MID] | Bass:OFF Lead:D4-2c..F4-2c (ctr E4+8c) | NPS D:0.0/M:5.6 | Bright:1897Hz Flat:0.0000
-  P05 [00:53-01:11] -29.9 LUFS (Cr 13.7dB, W 0.00) | Stems[D:OFF B:OFF V:OFF O:HIGH] | Bass:G2+12c Lead:A3-2c..D4-2c (ctr D4-2c) | NPS D:0.0/M:4.3 | Bright:1913Hz Flat:0.0001
-  P06 [01:11-01:17] -25.1 LUFS (Cr 14.1dB, W 0.00) | Stems[D:OFF B:OFF V:HIGH O:MID] | Bass:OFF Lead:D#4-2c..D#4+8c (ctr D#4-2c) | NPS D:0.0/M:6.5 | Bright:2568Hz Flat:0.0001
-  P07 [01:17-01:34] -28.1 LUFS (Cr 14.7dB, W 0.00) | Stems[D:OFF B:OFF V:LOW O:HIGH] | Bass:OFF Lead:D#4-12c..D#4+8c (ctr D#4-2c) | NPS D:0.0/M:4.9 | Bright:2132Hz Flat:0.0001
-  P08 [01:34-01:41] -29.5 LUFS (Cr 13.6dB, W 0.00) | Stems[D:OFF B:OFF V:LOW O:HIGH] | Bass:OFF Lead:OFF (ctr OFF) | NPS D:0.0/M:4.3 | Bright:1953Hz Flat:0.0001
-  P09 [01:41-01:58] -25.9 LUFS (Cr 15.6dB, W 0.00) | Stems[D:OFF B:OFF V:LOW O:HIGH] | Bass:OFF Lead:D#4-2c..D#4+8c (ctr D#4-2c) | NPS D:0.0/M:5.5 | Bright:2195Hz Flat:0.0001
-  P10 [01:58-02:10] -33.7 LUFS (Cr 15.1dB, W 0.00) | Stems[D:OFF B:OFF V:OFF O:MID] | Bass:OFF Lead:A3-2c..D#4-2c (ctr A3-2c) | NPS D:0.0/M:4.9 | Bright:1488Hz Flat:0.0001
-  P11 [02:10-02:28] -31.1 LUFS (Cr 15.3dB, W 0.00) | Stems[D:OFF B:OFF V:LOW O:MID] | Bass:OFF Lead:A3-2c..D4-2c (ctr D4-7c) | NPS D:0.0/M:5.7 | Bright:1545Hz Flat:0.0001
-  P12 [02:28-02:36] -30.2 LUFS (Cr 13.1dB, W 0.00) | Stems[D:OFF B:OFF V:OFF O:HIGH] | Bass:OFF Lead:A4-12c..A4+8c (ctr A4-2c) | NPS D:0.0/M:4.1 | Bright:1657Hz Flat:0.0001
-  P13 [02:36-03:01] -29.7 LUFS (Cr 15.5dB, W 0.00) | Stems[D:OFF B:OFF V:OFF O:HIGH] | Bass:OFF Lead:A3-2c..D#4-2c (ctr D#4-2c) | NPS D:0.0/M:5.0 | Bright:1707Hz Flat:0.0001
-  P14 [03:01-03:25] -33.1 LUFS (Cr 15.5dB, W 0.00) | Stems[D:OFF B:OFF V:LOW O:MID] | Bass:OFF Lead:C4-2c..G4-2c (ctr G4-12c) | NPS D:0.0/M:5.6 | Bright:1392Hz Flat:0.0001
+  P01 [00:00-00:13] -20.0 LUFS (Cr 16.6dB, W 0.29) | Stems[D:OFF B:OFF V:OFF O:MID] | Bass:OFF Lead:G3+5c..D4 (ctr B3-15c) | NPS D:0.1/M:1.2 | Bright:951Hz Flat:-56.9dB
+  P02 [00:13-00:22] -16.5 LUFS (Cr 13.2dB, W 0.22) | Stems[D:OFF B:MID V:OFF O:HIGH] | Bass:D2+19c Lead:D3+5c..D4 (ctr D3+10c) | NPS D:0.0/M:1.1 | Bright:889Hz Flat:-59.0dB
+  P03 [00:22-00:33] -17.8 LUFS (Cr 15.8dB, W 0.34) | Stems[D:OFF B:OFF V:OFF O:HIGH] | Bass:OFF Lead:G3-9c..D4 (ctr B3+5c) | NPS D:0.0/M:1.4 | Bright:811Hz Flat:-57.4dB
+  P04 [00:33-00:48] -17.3 LUFS (Cr 14.9dB, W 0.24) | Stems[D:OFF B:MID V:OFF O:MID] | Bass:D2+14c Lead:F#3+15c..G3+25c (ctr G3+5c) | NPS D:0.1/M:1.8 | Bright:808Hz Flat:-58.0dB
+  P05 [00:48-01:05] -17.5 LUFS (Cr 15.4dB, W 0.25) | Stems[D:MID B:LOW V:OFF O:HIGH] | Bass:G2+4c Lead:G3..F4+15c (ctr A3) | NPS D:0.9/M:2.2 | Bright:754Hz Flat:-59.0dB
+  P06 [01:05-01:17] -17.5 LUFS (Cr 14.0dB, W 0.30) | Stems[D:OFF B:OFF V:OFF O:HIGH] | Bass:OFF Lead:E3-5c..C4+5c (ctr G3) | NPS D:0.4/M:1.6 | Bright:724Hz Flat:-59.4dB
+  P07 [01:17-01:28] -16.8 LUFS (Cr 13.7dB, W 0.30) | Stems[D:MID B:LOW V:OFF O:MID] | Bass:C2+39c Lead:D3+6c..G3+40c (ctr G3+5c) | NPS D:1.1/M:1.8 | Bright:764Hz Flat:-59.1dB
+  P08 [01:28-01:47] -16.2 LUFS (Cr 13.3dB, W 0.31) | Stems[D:MID B:LOW V:MID O:MID] | Bass:D2+14c Lead:B3+5c..C#5-18c (ctr B4-5c) | NPS D:1.5/M:1.9 | Bright:972Hz Flat:-58.5dB
+  P09 [01:47-02:07] -17.2 LUFS (Cr 13.4dB, W 0.32) | Stems[D:MID B:LOW V:OFF O:MID] | Bass:D2+4c Lead:F#3+25c..E4-5c (ctr G3+35c) | NPS D:1.3/M:1.6 | Bright:583Hz Flat:-63.9dB
+  P10 [02:07-02:44] -16.0 LUFS (Cr 12.7dB, W 0.31) | Stems[D:MID B:MID V:OFF O:HIGH] | Bass:D2+19c Lead:E3..C5+5c (ctr B3-10c) | NPS D:1.3/M:1.8 | Bright:537Hz Flat:-68.6dB
+  P11 [02:44-03:00] -17.5 LUFS (Cr 13.7dB, W 0.32) | Stems[D:OFF B:MID V:OFF O:MID] | Bass:E2+9c Lead:F#3-30c..C4-15c (ctr G3+5c) | NPS D:0.0/M:0.9 | Bright:298Hz Flat:-73.0dB
+  P12 [03:00-03:08] -23.2 LUFS (Cr 14.9dB, W 0.25) | Stems[D:OFF B:LOW V:OFF O:LOW] | Bass:OFF Lead:D3-5c..G3-5c (ctr G3-20c) | NPS D:0.0/M:0.1 | Bright:1062Hz Flat:-64.4dB
 
 NOTES / CONTEXT: (none)
 ====================================================================================
