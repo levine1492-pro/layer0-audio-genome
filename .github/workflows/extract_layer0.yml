@@ -1,11 +1,12 @@
 name: Layer 0 v2 Audio Genome Engine
 
 on:
+  repository_dispatch:
+    types: [dispatcher_job]
   push:
     branches: [ main ]
     paths:
       - 'links_queue.txt'
-      - 'bootstrap_v2.py'
       - 'engine/**'
       - 'run_pipeline.py'
   workflow_dispatch:
@@ -27,6 +28,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: layer0-extract
+  cancel-in-progress: false
+
 jobs:
   extract:
     runs-on: ubuntu-latest
@@ -37,12 +42,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Unpack modular engine if bootstrap_v2.py exists
-        run: |
-          if [ -f bootstrap_v2.py ]; then
-            python3 bootstrap_v2.py
-          fi
 
       - name: Setup Python 3.11
         uses: actions/setup-python@v5
@@ -75,21 +74,30 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Layer 0 v2 Genome Pipeline
+        env:
+          DISPATCHER_TOKEN: ${{ secrets.DISPATCHER_TOKEN }}
         run: |
-          FLAGS=""
-          if [ "${{ github.event.inputs.mode }}" = "fast" ]; then
-            FLAGS="$FLAGS --fast"
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            python dispatch_bridge.py
+          else
+            FLAGS=""
+            if [ "${{ github.event.inputs.mode }}" = "fast" ]; then
+              FLAGS="$FLAGS --fast"
+            fi
+            if [ "${{ github.event.inputs.force_reprocess }}" = "true" ]; then
+              FLAGS="$FLAGS --force"
+            fi
+            python run_pipeline.py $FLAGS
           fi
-          if [ "${{ github.event.inputs.force_reprocess }}" = "true" ]; then
-            FLAGS="$FLAGS --force"
-          fi
-          python run_pipeline.py $FLAGS
+
+      - name: Export Catalog Index
+        run: python export_catalog_index.py
 
       - name: Commit engine, dossiers, genomes & SQLite catalog
         run: |
           git config user.name "layer0-bot"
           git config user.email "layer0-bot@users.noreply.github.com"
-          for p in engine run_pipeline.py requirements.txt archive db latest_dossier.md links_queue.txt; do
+          for p in engine run_pipeline.py requirements.txt archive db latest_dossier.md links_queue.txt catalog_index.json; do
             [ -e "$p" ] && git add "$p"
           done
           if ! git diff --cached --quiet; then
