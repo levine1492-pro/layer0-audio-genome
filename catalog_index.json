@@ -1,0 +1,103 @@
+{
+  "schema": "catalog_index.v1",
+  "items": [
+    {
+      "track_id": "2656d11a1011",
+      "archive_dir": "archive/screen-20261124-100010-1795532151825_2656d11a1011",
+      "title": "screen-20261124-100010-1795532151825",
+      "seed_id": "",
+      "tags": "",
+      "duration_s": 258.88,
+      "schema_version": "v2.1.0",
+      "key_mode": "F# Minor Blues",
+      "bpm": "129.2 BPM",
+      "lufs": "-17.5 LUFS",
+      "space_profile": "Pure Mono",
+      "created_at": "2026-11-24T20:19:26Z"
+    },
+    {
+      "track_id": "fe042008e8cf",
+      "archive_dir": "archive/Harmonica_Meditation_fe042008e8cf",
+      "title": "Harmonica Meditation",
+      "seed_id": "",
+      "tags": "",
+      "duration_s": 188.36,
+      "schema_version": "v2.1.0",
+      "key_mode": "G Ionian (Major)",
+      "bpm": "132.5 BPM",
+      "lufs": "-16.6 LUFS",
+      "space_profile": "Split-Space (Dry Drums + Ambient Bed)",
+      "created_at": "2026-11-21T22:57:31Z"
+    },
+    {
+      "track_id": "718f3255e28e",
+      "archive_dir": "archive/dune1_718f3255e28e",
+      "title": "dune1",
+      "seed_id": "",
+      "tags": "",
+      "duration_s": 205.95,
+      "schema_version": "v2.0.0",
+      "key_mode": "A Ionian (Major)",
+      "bpm": "126.0 BPM",
+      "lufs": "-28.6 LUFS",
+      "space_profile": "",
+      "created_at": "2026-11-21T22:28:29Z"
+    },
+    {
+      "track_id": "a76b47a1c45b",
+      "archive_dir": "archive/Brass_a76b47a1c45b",
+      "title": "Brass",
+      "seed_id": "",
+      "tags": "",
+      "duration_s": 197.6,
+      "schema_version": "v2.0.0",
+      "key_mode": "D Dorian",
+      "bpm": "166.7 BPM",
+      "lufs": "-16.9 LUFS",
+      "space_profile": "",
+      "created_at": "2026-11-21T22:11:09Z"
+    },
+    {
+      "track_id": "b65f8cd080d8",
+      "archive_dir": "archive/august_blues_easy_road_b65f8cd080d8",
+      "title": "august blues easy road",
+      "seed_id": "",
+      "tags": "",
+      "duration_s": 167.2,
+      "schema_version": "v2.0.0",
+      "key_mode": "C Aeolian (Minor)",
+      "bpm": "117.5 BPM",
+      "lufs": "-15.3 LUFS",
+      "space_profile": "",
+      "created_at": "2026-11-21T21:51:45Z"
+    },
+    {
+      "track_id": "300f70dc557a",
+      "archive_dir": "archive/Untitled_BPM120.0_2026-11-01_13.04.54.wav_Remix_1_300f70dc557a",
+      "title": "Untitled BPM120.0 2026-11-01 13.04.54.wav (Remix) (1)",
+      "seed_id": "",
+      "tags": "",
+      "duration_s": 187.16,
+      "schema_version": "v2.0.0",
+      "key_mode": "C Lydian",
+      "bpm": "57.4 BPM",
+      "lufs": "-15.4 LUFS",
+      "space_profile": "",
+      "created_at": "2026-11-21T21:24:40Z"
+    },
+    {
+      "track_id": "4d4e76571411",
+      "archive_dir": "archive/3-Instrument_4_Remix_4d4e76571411",
+      "title": "3-Instrument 4 (Remix)",
+      "seed_id": "seed_001",
+      "tags": "instrumental, rock ballad",
+      "duration_s": 232.36,
+      "schema_version": "v2.0.0",
+      "key_mode": "A Aeolian (Minor)",
+      "bpm": "101.3 BPM",
+      "lufs": "-15.9 LUFS",
+      "space_profile": "",
+      "created_at": "2026-11-21T21:05:40Z"
+    }
+  ]
+}
