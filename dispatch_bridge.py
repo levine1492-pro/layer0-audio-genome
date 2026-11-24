@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Bridge universal signal-dispatcher repository_dispatch payload into run_pipeline.py."""
+"""Bridge universal signal-dispatcher repository_dispatch payload directly into run_pipeline.process_entry."""
 import json
 import os
-import subprocess
 import sys
 import urllib.request
 from pathlib import Path
 
-TMP_QUEUE = Path("/tmp/dispatch_queue.txt")
+from run_pipeline import process_entry
+
+REPO_ROOT = Path(__file__).resolve().parent
 
 
 def main():
@@ -25,60 +26,68 @@ def main():
         print("Empty dispatch items[]. Nothing to run.")
         return
 
-    lines = []
+    use_demucs = not bool(params.get("fast", False))
+    force = bool(params.get("force", False))
+
     staged_keys = []
-    for item in items:
-        url = (item.get("source_url") or "").strip()
-        if not url:
-            continue
-        if item.get("staged_key"):
-            staged_keys.append(item["staged_key"])
+    succeeded = 0
+    failed = 0
 
-        meta = item.get("meta") or {}
-        default_title = Path(item.get("filename") or "untitled").stem
-        title = (meta.get("title") or default_title).replace("|", "-")
-        seed_id = (meta.get("seed_id") or "").replace("|", "-")
-        role = (meta.get("role") or "").strip()
-        raw_tags = (meta.get("tags") or "").replace("|", ",")
-        tags_parts = [f"role:{role}"] if role and role != "standalone" else []
-        if raw_tags:
-            tags_parts.append(raw_tags)
-        tags = ", ".join(tags_parts)
-        notes = (meta.get("notes") or "").replace("|", "-").replace("\n", " ")
+    try:
+        for item in items:
+            url = (item.get("source_url") or "").strip()
+            if not url:
+                continue
+            if item.get("staged_key"):
+                staged_keys.append(item["staged_key"])
 
-        lines.append(f"{url} | {title} | {seed_id} | {tags} | {notes}")
+            meta = item.get("meta") or {}
+            default_title = Path(item.get("filename") or "").stem
+            title = (meta.get("title") or default_title).strip()
+            seed_id = (meta.get("seed_id") or "").strip()
+            role = (meta.get("role") or "").strip()
+            raw_tags = (meta.get("tags") or "").strip()
 
-    TMP_QUEUE.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"Prepared {len(lines)} dispatched track(s) in {TMP_QUEUE}")
+            tags_parts = [f"role:{role}"] if role and role != "standalone" else []
+            if raw_tags:
+                tags_parts.append(raw_tags)
 
-    cmd = [sys.executable, "run_pipeline.py", "--file", str(TMP_QUEUE)]
-    if params.get("fast"):
-        cmd.append("--fast")
-    if params.get("force"):
-        cmd.append("--force")
+            entry = {
+                "source": url,
+                "title": title,
+                "seed_id": seed_id,
+                "tags": ", ".join(tags_parts),
+                "notes": (meta.get("notes") or "").strip(),
+            }
 
-    rc = subprocess.call(cmd)
+            try:
+                process_entry(entry, REPO_ROOT, use_demucs=use_demucs, force=force)
+                succeeded += 1
+            except Exception as exc:
+                failed += 1
+                print(f"[ERROR] Dispatched item failed ({item.get('filename') or url}): {exc}", file=sys.stderr)
+    finally:
+        cb_url = payload.get("callback_url")
+        cb_token = os.environ.get("DISPATCHER_TOKEN")
+        if cb_url and cb_token and staged_keys:
+            try:
+                req = urllib.request.Request(
+                    cb_url,
+                    data=json.dumps({"job_id": payload.get("job_id"), "staged_keys": staged_keys}).encode(),
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {cb_token}",
+                    },
+                    method="POST",
+                )
+                urllib.request.urlopen(req, timeout=15)
+                print(f"Purged {len(staged_keys)} staged R2 object(s) via callback.")
+            except Exception as exc:
+                print(f"Callback purge skipped ({exc}); R2 24h lifecycle will clean up.")
 
-    # Optional instant cleanup callback to purge R2 staging immediately
-    cb_url = payload.get("callback_url")
-    cb_token = os.environ.get("DISPATCHER_TOKEN")
-    if cb_url and cb_token and staged_keys:
-        try:
-            req = urllib.request.Request(
-                cb_url,
-                data=json.dumps({"job_id": payload.get("job_id"), "staged_keys": staged_keys}).encode(),
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {cb_token}",
-                },
-                method="POST",
-            )
-            urllib.request.urlopen(req, timeout=15)
-            print(f"Purged {len(staged_keys)} staged R2 object(s) via callback.")
-        except Exception as e:
-            print(f"Callback purge skipped ({e}); R2 24h lifecycle will clean up.")
-
-    sys.exit(rc)
+    print(f"Dispatch complete: {succeeded} succeeded, {failed} failed.")
+    if succeeded == 0 and failed > 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
